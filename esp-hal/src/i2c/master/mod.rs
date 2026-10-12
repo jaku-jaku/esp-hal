@@ -3346,12 +3346,14 @@ where
 
 fn read_fifo(register_block: &RegisterBlock) -> u8 {
     cfg_if::cfg_if! {
-        if #[cfg(esp32s2)] {
-            // Apparently the ESO can read just fine using DPORT,
-            // so use this workaround on S2 only.
+        if #[cfg(any(esp32, esp32s2))] {
+            // ESP32: a FIFO read over the DPORT bus can advance the read pointer twice and drop
+            // a byte (ESP-IDF `i2c_ll_read_rxfifo`: "fifo pointer jump over a random address").
             let peri_offset = register_block as *const _ as usize - crate::peripherals::I2C0::ptr() as usize;
             let fifo_ptr = (property!("i2c_master.i2c0_data_register_ahb_address") + peri_offset) as *mut u32;
-            unsafe { (fifo_ptr.read_volatile() & 0xff) as u8 }
+            let byte = unsafe { (fifo_ptr.read_volatile() & 0xff) as u8 };
+            core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
+            byte
         } else {
             register_block.data().read().fifo_rdata().bits()
         }
