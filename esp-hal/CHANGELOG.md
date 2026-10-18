@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- ESP32: I2C master reads the RX FIFO through the AHB address, so a read no longer drops a byte (#????)
+- ESP32: I2C master reads the RX FIFO the way ESP-IDF's `DPORT_REG_READ` does, so a read no longer drops a byte (#6499)
 
 ### Removed
 
